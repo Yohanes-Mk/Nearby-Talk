@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth, api } from "../App";
+import { useAuth, api, DEMO_MODE } from "../App";
+import { DEMO_ACCOUNTS } from "../demoApi";
 import { toast } from "sonner";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -67,7 +68,7 @@ export default function LandingPage() {
         code: verificationCode 
       });
       login(res.data.token, res.data.user);
-      toast.success("Welcome to NearbyTalk");
+      toast.success("Welcome to Nearby Talk");
       navigate("/feed");
     } catch (err) {
       toast.error(err.response?.data?.detail || "Verification failed");
@@ -91,6 +92,25 @@ export default function LandingPage() {
     }
   };
 
+  const handleDemoLogin = async (account) => {
+    setLoading(true);
+    try {
+      const res = await api.post("/auth/login", { email: account.email, password: "demo" });
+      login(res.data.token, res.data.user);
+      navigate("/feed");
+    } catch (err) {
+      toast.error("Demo account unavailable");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openAccountChooser = () => {
+    resetForm();
+    setAuthMode(DEMO_MODE ? "demo" : "login");
+    setShowAuth(true);
+  };
+
   const resetForm = () => {
     setEmail("");
     setPassword("");
@@ -107,7 +127,7 @@ export default function LandingPage() {
           <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
             <MessageCircle className="w-4 h-4 text-primary" />
           </div>
-          <span className="text-lg font-semibold text-foreground">NearbyTalk</span>
+          <span className="text-lg font-semibold text-foreground">Nearby Talk</span>
         </div>
         <Button 
           data-testid="header-login-btn"
@@ -145,13 +165,33 @@ export default function LandingPage() {
             </Button>
             <Button
               data-testid="login-btn"
-              onClick={() => { resetForm(); setAuthMode("login"); setShowAuth(true); }}
+              onClick={openAccountChooser}
               variant="outline"
               className="btn-minimal border-border text-foreground px-6 py-5"
             >
               I have an account
             </Button>
           </div>
+
+          {DEMO_MODE && (
+            <div className="space-y-3 pt-4">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Explore with a demo identity</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {DEMO_ACCOUNTS.map((account) => (
+                  <Button
+                    key={account.id}
+                    variant="outline"
+                    disabled={loading}
+                    onClick={() => handleDemoLogin(account)}
+                    className="justify-start border-border text-left text-xs font-normal"
+                  >
+                    {account.email}
+                  </Button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">Demo password: demo</p>
+            </div>
+          )}
 
           {/* Features */}
           <div className="grid gap-4 pt-12">
@@ -207,11 +247,13 @@ export default function LandingPage() {
               {authMode === "login" && "Welcome back"}
               {authMode === "register" && "Create account"}
               {authMode === "verify" && "Verify email"}
+              {authMode === "demo" && "Choose an account"}
             </DialogTitle>
             <DialogDescription className="text-muted-foreground">
               {authMode === "login" && "Sign in to continue"}
               {authMode === "register" && "Use any email. .edu emails get university access."}
               {authMode === "verify" && `Enter the code sent to ${pendingEmail}`}
+              {authMode === "demo" && "Choose one of the prepared demo identities to continue."}
             </DialogDescription>
           </DialogHeader>
 
@@ -271,6 +313,24 @@ export default function LandingPage() {
                 </button>
               </p>
             </form>
+          )}
+
+          {authMode === "demo" && (
+            <div className="space-y-3 pt-2">
+              {DEMO_ACCOUNTS.map((account) => (
+                <Button
+                  key={account.id}
+                  type="button"
+                  variant="outline"
+                  disabled={loading}
+                  onClick={() => handleDemoLogin(account)}
+                  className="w-full justify-start border-border text-left font-normal"
+                >
+                  <span className="truncate">{account.email}</span>
+                </Button>
+              ))}
+              <p className="text-xs text-muted-foreground">Each demo account uses the password: demo</p>
+            </div>
           )}
 
           {authMode === "register" && (

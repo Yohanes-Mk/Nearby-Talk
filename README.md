@@ -1,60 +1,50 @@
-# NearbyTalk
+# Nearby Talk
 
-Anonymous local social feed for your city and university. Post, vote, and comment — no username attached.
+Anonymous local conversations for cities and universities. Nearby Talk lets people post, vote, and comment without attaching a public username to their activity.
 
-## What it does
+## Demo
 
-- Post anonymously to your **city feed** or **university feed**
-- Upvote / downvote posts and comments
-- University feed is only available to `.edu` email holders
-- Minimal dark neo-brutalist UI
+The app is a full-stack React and FastAPI service with a MongoDB data store. The production stack serves the frontend and API from one origin, so it can run behind a single domain or reverse proxy.
+
+## Features
+
+- Anonymous city and university feeds
+- `.edu` email access to university feeds
+- Email verification flow with JWT sessions
+- Posts, comments, upvotes, and downvotes
+- Responsive React interface
+- API and frontend health checks
 
 ## Stack
 
-| Layer | Tech |
-|-------|------|
-| Frontend | React 19, Tailwind CSS, Radix UI |
-| Backend | FastAPI (Python), MongoDB |
-| Auth | JWT + email verification |
+- React 19, Tailwind CSS, Radix UI
+- FastAPI, Motor, and Pydantic
+- MongoDB 7
+- Docker Compose and Nginx
 
-## Run it locally
+## Deploy with Docker
 
-**Prerequisites**
-- Docker Desktop installed and running
-- Python 3.9+
-- `nvm` installed
-- Node.js 18
-
-## Manual local setup
-
-1. Clone the repo and move into it.
+Prerequisites: Docker Engine with Compose v2.
 
 ```bash
-git clone <repo-url>
-cd <repo-folder>
+cp .env.example .env
+openssl rand -hex 32
+# Put the generated value in .env as JWT_SECRET
+docker compose up -d --build
 ```
 
-2. Start MongoDB with Docker.
+Open `http://localhost` or the port configured by `APP_PORT`. Verify the deployment with:
 
 ```bash
-docker run --rm --name nearbytalk-mongo -p 27017:27017 -d mongo:7
+curl http://localhost/health
+curl http://localhost/api/health
 ```
 
-3. Create and activate a Python virtual environment.
+The MongoDB data volume is named `nearby-talk_mongo-data` by default. Keep it when upgrading the app; removing it deletes stored users, posts, votes, and comments.
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-```
+## Run locally without Docker
 
-4. Install backend dependencies.
-
-```bash
-pip install fastapi uvicorn motor pymongo "pydantic[email]" python-dotenv PyJWT python-multipart
-```
-
-5. Create `backend/.env`.
+Start MongoDB locally, then configure `backend/.env`:
 
 ```env
 MONGO_URL=mongodb://localhost:27017
@@ -63,69 +53,59 @@ JWT_SECRET=dev-only-secret
 CORS_ORIGINS=http://localhost:3000
 ```
 
-6. Start the backend.
+Install and run the backend:
 
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r backend/requirements.txt
 cd backend
-../.venv/bin/python -m uvicorn server:app --host 127.0.0.1 --port 8001 --reload
+python -m uvicorn server:app --host 127.0.0.1 --port 8001 --reload
 ```
 
-7. In a new terminal, load Node with `nvm` and install frontend dependencies.
+In another terminal, install and run the frontend:
 
 ```bash
-source ~/.nvm/nvm.sh
-nvm install 18
-nvm use 18
-
 cd frontend
-echo 'REACT_APP_BACKEND_URL=http://localhost:8001' > .env
-npm install -g yarn@1.22.22
 yarn install
+REACT_APP_BACKEND_URL=http://localhost:8001 yarn start
 ```
 
-8. Start the frontend.
+For a production frontend build:
 
 ```bash
 cd frontend
-yarn start
+yarn build
 ```
 
-9. Open the app.
+When `REACT_APP_BACKEND_URL` is omitted, the frontend uses same-origin `/api` requests, which is the expected production configuration behind the included Nginx proxy.
 
-- Frontend: `http://localhost:3000`
-- Backend health check: `http://localhost:8001/api/health`
+## Hosted demo mode
 
-## Stopping local services
+The Vercel preview is built with `REACT_APP_DEMO_MODE=true`, which provides seeded browser-local data without requiring MongoDB. The landing page's **I have an account** action opens the prepared identity chooser, and the user menu keeps the same switcher available inside the feed.
 
-- Stop the frontend and backend with `Ctrl+C` in each terminal
-- Stop MongoDB with `docker stop nearbytalk-mongo`
+Demo identities:
+
+- `maya@nearbytalk.demo`
+- `dawit@nearbytalk.demo`
+- `lena@nearbytalk.demo`
+- `sam@nearbytalk.demo`
+
+All four use the password `demo`. Demo activity is intentionally local to each browser and is not shared with the production API.
 
 ## Project structure
 
-```
-├── backend/
-│   └── server.py       # All API routes (FastAPI)
-├── frontend/
-│   └── src/
-│       ├── App.js              # Auth context + routing
-│       └── pages/
-│           ├── LandingPage.jsx     # Login / register
-│           ├── FeedPage.jsx        # Main feed
-│           └── PostDetailPage.jsx  # Single post + comments
-└── memory/PRD.md       # Product requirements doc
+```text
+backend/                  FastAPI application and runtime image
+frontend/                 React application, build image, and Nginx config
+docker-compose.yml        MongoDB, backend, and frontend deployment
+.env.example              Production environment template
 ```
 
-## Environment variables
+## Configuration
 
-**`backend/.env`**
-```
-MONGO_URL=mongodb://localhost:27017
-DB_NAME=nearbytalk
-JWT_SECRET=dev-only-secret
-CORS_ORIGINS=http://localhost:3000
-```
+`JWT_SECRET` must be a long, private value in deployment. `CORS_ORIGINS` accepts a comma-separated list of allowed browser origins. `APP_PORT` controls the host port exposed by the frontend container.
 
-**`frontend/.env`**
-```
-REACT_APP_BACKEND_URL=http://localhost:8001
-```
+## License and scope
+
+Nearby Talk is a community discussion prototype. It does not provide moderation, abuse reporting, rate limiting, email delivery, or production-grade account recovery yet. Add those controls before opening the service to an untrusted public audience.

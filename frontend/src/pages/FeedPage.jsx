@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth, api } from "../App";
+import { useAuth, api, DEMO_MODE } from "../App";
+import { DEMO_ACCOUNTS } from "../demoApi";
 import { toast } from "sonner";
 import { Button } from "../components/ui/button";
 import { Textarea } from "../components/ui/textarea";
@@ -17,6 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
 } from "../components/ui/dropdown-menu";
 import { 
   MessageCircle, 
@@ -34,7 +36,7 @@ import {
 } from "lucide-react";
 
 export default function FeedPage() {
-  const { user, logout } = useAuth();
+  const { user, login, logout } = useAuth();
   const navigate = useNavigate();
   
   // If user doesn't have university access, always show city feed
@@ -118,6 +120,16 @@ export default function FeedPage() {
     }
   };
 
+  const handleDemoSwitch = async (account) => {
+    try {
+      const res = await api.post("/auth/login", { email: account.email, password: "demo" });
+      login(res.data.token, res.data.user);
+      window.location.reload();
+    } catch (err) {
+      toast.error("Could not switch demo identity");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Header */}
@@ -128,7 +140,7 @@ export default function FeedPage() {
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                 <MessageCircle className="w-4 h-4 text-primary" />
               </div>
-              <span className="text-lg font-semibold">NearbyTalk</span>
+              <span className="text-lg font-semibold">Nearby Talk</span>
             </div>
             
             <DropdownMenu>
@@ -142,6 +154,21 @@ export default function FeedPage() {
                   <User className="w-4 h-4" />
                   <span className="truncate text-sm">{user?.email}</span>
                 </DropdownMenuItem>
+                {DEMO_MODE && (
+                  <>
+                    <DropdownMenuSeparator className="bg-border" />
+                    <DropdownMenuLabel className="text-xs text-muted-foreground">Switch demo identity</DropdownMenuLabel>
+                    {DEMO_ACCOUNTS.map((account) => (
+                      <DropdownMenuItem
+                        key={account.id}
+                        onClick={() => handleDemoSwitch(account)}
+                        className="text-xs"
+                      >
+                        {account.email}
+                      </DropdownMenuItem>
+                    ))}
+                  </>
+                )}
                 <DropdownMenuSeparator className="bg-border" />
                 <DropdownMenuItem 
                   data-testid="logout-btn"

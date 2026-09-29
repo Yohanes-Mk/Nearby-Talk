@@ -5,9 +5,11 @@ import { Toaster, toast } from "sonner";
 import LandingPage from "./pages/LandingPage";
 import FeedPage from "./pages/FeedPage";
 import PostDetailPage from "./pages/PostDetailPage";
+import { createDemoAdapter } from "./demoApi";
 import "@/App.css";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
+export const DEMO_MODE = process.env.REACT_APP_DEMO_MODE === "true";
 export const API = `${BACKEND_URL}/api`;
 
 // Auth Context
@@ -24,6 +26,10 @@ export const api = axios.create({
   baseURL: API,
   headers: { "Content-Type": "application/json" }
 });
+
+if (DEMO_MODE) {
+  api.defaults.adapter = createDemoAdapter();
+}
 
 // Add auth token to requests
 api.interceptors.request.use((config) => {
