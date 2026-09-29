@@ -6,6 +6,18 @@ Anonymous local conversations for cities and universities. Nearby Talk lets peop
 
 The app is a full-stack React and FastAPI service with a MongoDB data store. The production stack serves the frontend and API from one origin, so it can run behind a single domain or reverse proxy.
 
+![Nearby Talk demo](docs/nearby-talk-demo.gif)
+
+### Screenshots
+
+![Nearby Talk landing page](docs/nearby-talk-landing.png)
+
+![Nearby Talk account chooser](docs/nearby-talk-account-chooser.png)
+
+![Nearby Talk university feed](docs/nearby-talk-feed-university.png)
+
+![Nearby Talk city feed](docs/nearby-talk-feed-city.png)
+
 ## Features
 
 - Anonymous city and university feeds
